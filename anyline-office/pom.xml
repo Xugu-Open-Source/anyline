@@ -8,7 +8,7 @@
         <groupId>org.anyline</groupId>
         <artifactId>anyline-dependency</artifactId>
         <version>8.5.1-SNAPSHOT</version>
-        <relativePath></relativePath>
+        <relativePath>../anyline-dependency</relativePath>
     </parent>
 
     <artifactId>anyline-office</artifactId>

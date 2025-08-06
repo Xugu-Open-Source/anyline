@@ -60,6 +60,7 @@
 		<anyline.jdbc.version>${anyline.version}</anyline.jdbc.version>
 		<anyline.jdbc.mssql.version>${anyline.version}</anyline.jdbc.mssql.version>
 		<anyline.jdbc.mysql.version>${anyline.version}</anyline.jdbc.mysql.version>
+		<anyline.jdbc.xugu.version>${anyline.version}</anyline.jdbc.xugu.version>
 		<anyline.jdbc.mariadb.version>${anyline.version}</anyline.jdbc.mariadb.version>
 		<anyline.jdbc.db2.version>${anyline.version}</anyline.jdbc.db2.version>
 		<anyline.jdbc.oracle.version>${anyline.version}</anyline.jdbc.oracle.version>
@@ -68,6 +69,7 @@
 
 		<mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
 		<mysql.version>8.0.16</mysql.version>
+        <xugu.version>12.3.4</xugu.version>
 		<db2-jdbc.version>11.5.0.0</db2-jdbc.version>
 		<ojdbc.version>19.3.0.0</ojdbc.version><!-- oracle -->
 		<postgresql.version>42.2.8</postgresql.version>
@@ -167,6 +169,11 @@
 				<groupId>org.anyline</groupId>
 				<artifactId>anyline-jdbc-mysql</artifactId>
 				<version>${anyline.jdbc.mysql.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.anyline</groupId>
+				<artifactId>anyline-jdbc-xugu</artifactId>
+				<version>${anyline.jdbc.xugu.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.anyline</groupId>
@@ -304,6 +311,11 @@
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
 				<version>${mysql.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.xugudb</groupId>
+				<artifactId>xugu-jdbc</artifactId>
+				<version>${xugu.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.postgresql</groupId>

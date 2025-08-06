@@ -43,6 +43,7 @@
 		<module>anyline-jdbc-hgdb</module>
 		<module>anyline-jdbc-mssql</module>
 		<module>anyline-jdbc-mysql</module>
+		<module>anyline-jdbc-xugu</module>
 		<module>anyline-jdbc-oracle</module>
 		<module>anyline-jdbc-postgresql</module>
 		<module>anyline-jdbc-dm</module>
