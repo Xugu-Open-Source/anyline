@@ -27,6 +27,7 @@ import org.anyline.jdbc.config.ConfigStore;
 public interface SQLCreater{ 
 	public static enum DB_TYPE{
 		MYSQL			{public String getName(){return "mysql";}},
+		XUGU			{public String getName(){return "xugu";}},
 		MSSQL			{public String getName(){return "mssql";}},
 		ORACLE			{public String getName(){return "oracle";}},
 		DB2				{public String getName(){return "db2";}},
