@@ -91,6 +91,7 @@
 		<javax.servlet.version>4.0.0</javax.servlet.version>
 		<javax.jsp.version>2.0</javax.jsp.version>
 		<javax.jstl.version>1.1.2</javax.jstl.version>
+		<xugu-jdbc.version>12.3.4</xugu-jdbc.version>
 		<!--JDK17部分-->
 		<jakarta.servlet.version>6.0.0</jakarta.servlet.version>
 		<jakarta.jsp.version>3.1.1</jakarta.jsp.version>
@@ -177,6 +178,11 @@
 				<groupId>org.anyline</groupId>
 				<artifactId>anyline-sms</artifactId>
 				<version>${anyline.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.xugudb</groupId>
+				<artifactId>xugu-jdbc</artifactId>
+				<version>${xugu-jdbc.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.oracle.database.jdbc</groupId>

@@ -318,6 +318,7 @@ public enum DatabaseType implements Serializable {
         OpenSearch          	("OpenSearch"                       	,KEY_CASE.SRC	,955	,null	,""	,""),
         OpenTSDB            	("OpenTSDB"                         	,KEY_CASE.SRC	,844	,null	,""	,""),
         ORACLE              	("Oracle"                           	,KEY_CASE.SRC	,997	,null	,"oracle.jdbc.OracleDriver"	,"jdbc:oracle:thin:@{host}:{port:1521}/{database}"),
+        XUGU                  	("xugu"                           	    ,KEY_CASE.SRC	,9527,null	,"com.xugu.cloudjdbc.Driver"	,"jdbc:xugu:@{host}:{port:5138}/{database}"),
         OracleBerkeley      	("Oracle Berkeley DB"               	,KEY_CASE.SRC	,897	,null	,""	,""),
         OracleCoherence     	("Oracle Coherence"                 	,KEY_CASE.SRC	,871	,null	,""	,""),
         OracleEssbase       	("Oracle Essbase"                   	,KEY_CASE.SRC	,942	,null	,""	,""),
