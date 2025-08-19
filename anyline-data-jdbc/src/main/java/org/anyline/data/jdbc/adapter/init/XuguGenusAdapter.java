@@ -700,7 +700,7 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
      */
     @Override
     public String mergeFinalQuery(DataRuntime runtime, Run run) {
-        return super.pageOffsetNext(runtime, run);
+        return super.pageLimitOffset(runtime, run);
     }
     /**
      * select[命令合成-子流程] <br/>
