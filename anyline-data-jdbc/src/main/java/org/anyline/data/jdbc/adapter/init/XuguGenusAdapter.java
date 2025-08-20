@@ -29,6 +29,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements InitializingBean {
 
@@ -1171,6 +1173,14 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
 	 * Database database(DataRuntime runtime, boolean create, Database dataase, DataSet set)
 	 * Database database(DataRuntime runtime, boolean create, Database dataase)
      ******************************************************************************************************************/
+
+    private  static String getRole(Boolean greedy){
+        if(null == greedy || greedy == false){
+            return "USER";
+        }else {
+            return "ALL";
+        }
+    }
     /**
      * database[调用入口]<br/>
      * @param runtime 运行环境主要包含驱动适配器 数据源或客户端
@@ -1205,11 +1215,22 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
      */
     @Override
     public List<Run> buildQueryDatabasesRun(DataRuntime runtime, boolean greedy, String name) throws Exception {
+
         List<Run> runs = new ArrayList<>();
         Run run = new SimpleRun(runtime);
         runs.add(run);
         StringBuilder builder = run.getBuilder();
-        builder.append("SELECT USERNAME DATABASE_NAME, CASE WHEN (USERNAME = USER) THEN 1 ELSE 0 END IS_CURRENT FROM SYS.ALL_USERS");
+        builder.append("SELECT\n" +
+                "*\n" +
+                "FROM \n" +
+                 getRole(greedy)+"_DATABASES UD\n" +
+                "LEFT JOIN \n" +
+                getRole(greedy)+"_SCHEMAS US \n" +
+                "ON UD.DB_ID = US.DB_ID\n" +
+                "WHERE US.SCHEMA_NAME IS NOT NULL");
+        if (null != name && "".equals(name) ){
+            builder.append(" AND UD.DB_NAME LIKE '").append(name).append("'");
+        }
         return runs;
     }
     /**
@@ -1229,7 +1250,9 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
         }
         for(DataRow row:set){
             Database database = new Database();
-            database.setName(row.getString("DATABASE_NAME"));
+            database.setName(row.getString("DB_NAME"));
+            database.setSchema(row.getString("SCHEMA_NAME"));
+            database.setCharset(row.getString("CHAR_SET"));
             databases.put(database.getName().toUpperCase(), database);
         }
         return databases;
@@ -1734,8 +1757,9 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
                 "\tUT.TABLE_TYPE AS TABLE_TYPE,\n" +
                 "\tUT.COMMENTS\n" +
                 "FROM\n" +
-                "\tUSER_TABLES UT\n" +
-                "LEFT JOIN USER_SCHEMAS US ON\n" +
+                getRole(greedy)+"\t_TABLES UT\n" +
+                "LEFT JOIN " +
+                getRole(greedy)+"_SCHEMAS US ON\n" +
                 "\tUT.SCHEMA_ID = US.SCHEMA_ID ORDER BY TABLE_SCHEMA DESC");
         return runs;
     }
@@ -1765,7 +1789,7 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
                 "on ut.schema_id = us.schema_id\n" +
                 "where 1=1\n");
         if(BasicUtil.isNotEmpty(schema)){
-            builder.append(" AND schema_name = '").append(schema).append("'");
+            builder.append(" AND schema_name = '").append(schema.getName()).append("'");
         }
         if(BasicUtil.isNotEmpty(pattern)){
             builder.append(" AND TABLE_NAME = '").append(pattern).append("'");
@@ -1975,9 +1999,17 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
         Run run = new SimpleRun(runtime);
         runs.add(run);
         StringBuilder builder = run.getBuilder();
-        builder.append("SELECT A.VIEW_NAME,A.TEXT DEFINITION_SQL, B.COMMENTS, 'VIEW'  TABLE_TYPE FROM USER_VIEWS  A, USER_TAB_COMMENTS B WHERE A.VIEW_NAME = B.TABLE_NAME");
+        builder.append("SELECT * FROM" +
+                getRole(greedy) + "_VIEWS" +
+                " left join " +
+                getRole(greedy) + "_schemas" +
+                "on av.schema_id = sh.schema_id" +
+                " WHERE 1=1");
+        if(BasicUtil.isNotEmpty(schema)){
+            builder.append(" AND sh.schema_name = '").append(schema.getName()).append("'");
+        }
         if(BasicUtil.isNotEmpty(pattern)){
-            builder.append(" AND TABLE_NAME LIKE '").append(pattern).append("'");
+            builder.append(" AND av.VIEW_NAME LIKE '").append(pattern).append("'");
         }
         return runs;
     }
@@ -2011,7 +2043,7 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
             view.setSchema(schema);
             view.setName(name);
             view.setComment(row.getString("COMMENTS"));
-            view.setDefinition(row.getString("DEFINITION_SQL"));
+            view.setDefinition(row.getString("DEFINE"));
             views.put(name.toUpperCase(), view);
         }
         return views;
@@ -2408,7 +2440,11 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
             name(runtime, builder, table);
             builder.append(" WHERE 1=0");
         }else{
-            builder.append("SELECT *,col_name as COLUMN_NAME FROM USER_COLUMNS  UC LEFT JOIN USER_TABLES UT ON UC.TABLE_ID = UT.TABLE_ID  ");
+            builder.append("SELECT *,col_name as COLUMN_NAME FROM " +
+                    "USER_COLUMNS  UC " +
+                    "LEFT JOIN " +
+                    "USER_TABLES UT " +
+                    "ON UC.TABLE_ID = UT.TABLE_ID  ");
             if (BasicUtil.isNotEmpty(table)) {
                 builder.append("WHERE UT.TABLE_NAME = '").append(table.getName()).append("'");
             }
@@ -2565,12 +2601,23 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
         Run run = new SimpleRun(runtime);
         runs.add(run);
         StringBuilder builder = run.getBuilder();
-        builder.append("SELECT COL.* FROM USER_CONSTRAINTS CON,USER_CONS_COLUMNS COL\n");
-        builder.append("WHERE CON.CONSTRAINT_NAME = COL.CONSTRAINT_NAME\n");
-        builder.append("AND CON.CONSTRAINT_TYPE = 'P'\n");
-        builder.append("AND COL.TABLE_NAME = '").append(table.getName()).append("'\n");
+        builder.append("SELECT\n" +
+                "\t*\t\n" +
+                "FROM\n" +
+                "\tUSER_CONSTRAINTS UC\n" +
+                "LEFT JOIN \n" +
+                "\tUSER_TABLES UT\n" +
+                "LEFT JOIN\n" +
+                "\tUSER_SCHEMAS US\n" +
+                "ON UT.SCHEMA_ID = US.SCHEMA_ID\n" +
+                "ON UC.TABLE_ID = UT.TABLE_ID \n" +
+                "WHERE  1 = 1 \n" +
+                " AND UC.CONS_TYPE = 'P'\n");
+        if (BasicUtil.isNotEmpty(table.getName())){
+            builder.append(" AND ut.TABLE_NAME = '").append(table.getName()).append("'\n");
+        }
         if(BasicUtil.isNotEmpty(table.getSchema())){
-            builder.append(" AND COL.OWNER = '").append(table.getSchemaName()).append("'");
+            builder.append(" AND us.SCHEMA_NAME = '").append(table.getSchemaName()).append("'");
         }
         return runs;
     }
@@ -2612,12 +2659,11 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
     @Override
     public PrimaryMetadataAdapter primaryMetadataAdapter(DataRuntime runtime){
         PrimaryMetadataAdapter config = super.primaryMetadataAdapter(runtime);
-        config.setNameRefer("CONSTRAINT_NAME");
+        config.setNameRefer("CONS_NAME");
         config.setCatalogRefer((String)null);
-        config.setSchemaRefer("OWNER");
+        config.setSchemaRefer("SCHEMA_NAME");
         config.setTableRefer("TABLE_NAME");
-        config.setColumnRefer("COLUMN_NAME");
-        config.setColumnPositionRefer("POSITION");
+        config.setColumnRefer("DEFINE");
         config.setColumnOrderRefer((String)null);
         return config;
     }
@@ -2664,16 +2710,43 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
         Run run = new SimpleRun(runtime);
         runs.add(run);
         StringBuilder builder = run.getBuilder();
-        builder.append("SELECT UC.CONSTRAINT_NAME, UC.TABLE_NAME, KCU.COLUMN_NAME, UC.R_CONSTRAINT_NAME, RC.TABLE_NAME AS REFERENCED_TABLE_NAME, RCC.COLUMN_NAME AS REFERENCED_COLUMN_NAME, RCC.POSITION AS ORDINAL_POSITION\n");
-        builder.append("FROM USER_CONSTRAINTS UC \n");
-        builder.append("JOIN USER_CONS_COLUMNS KCU ON UC.CONSTRAINT_NAME = KCU.CONSTRAINT_NAME \n");
-        builder.append("JOIN USER_CONSTRAINTS RC ON UC.R_CONSTRAINT_NAME = RC.CONSTRAINT_NAME \n");
-        builder.append("JOIN USER_CONS_COLUMNS RCC ON RC.CONSTRAINT_NAME = RCC.CONSTRAINT_NAME AND KCU.POSITION = RCC.POSITION");
+        builder.append("SELECT\n" +
+                "\tDISTINCT F.*,\n" +
+                "\tS.SCHEMA_NAME,\n" +
+                "\tT.TABLE_NAME,\n" +
+                "\tF.DEFINE AS COL_NAME,\n" +
+                "\tT2.TABLE_NAME AS REF_TABLE_NAME,\n" +
+                "\tF2.CONS_NAME AS REF_NAME\n" +
+                "FROM\n" +
+                "\tALL_CONSTRAINTS F\n" +
+                "INNER JOIN (\n" +
+                "\tSELECT\n" +
+                "\t\tS.SCHEMA_NAME,\n" +
+                "\t\tT.TABLE_ID,\n" +
+                "\t\tT.TABLE_NAME\n" +
+                "\tFROM\n" +
+                "\t\tALL_SCHEMAS S\n" +
+                "\tINNER JOIN ALL_TABLES T\n" +
+                "\t\t\tUSING(SCHEMA_ID)\n" +
+                "\tWHERE\n" +
+                "\t\ttable_name = '"+ table.getName()+"')\n"+
+                "\t\tUSING(TABLE_ID)\n" +
+                "INNER JOIN (\n" +
+                "\tSELECT\n" +
+                "\t\tT2.TABLE_NAME,\n" +
+                "\t\tT2.TABLE_ID\n" +
+                "\tFROM\n" +
+                "\t\tALL_TABLES T2) ON\n" +
+                "\tF.REF_TABLE_ID = T2.TABLE_ID\n" +
+                "JOIN ALL_CONSTRAINTS F2 ON\n" +
+                "\tf.REF_TABLE_ID = F2.TABLE_ID\n" +
+                "WHERE\n" +
+                "\tCONS_TYPE = 'F'\n" );
         if(null != table){
-            if(BasicUtil.isNotEmpty(table.getCatalogName())){
-                builder.append(" AND OWNER = '").append(table.getCatalogName()).append("'\n");
+            if(BasicUtil.isNotEmpty(table.getSchemaName())){
+                builder.append(" AND SCHEMA_NAME = '").append(table.getSchemaName()).append("'\n");
             }
-            builder.append(" AND UC.TABLE_NAME = '").append(table.getName()).append("'\n");
+
         }
         return runs;
     }
@@ -2693,22 +2766,36 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
             foreigns = new LinkedHashMap<>();
         }
         for(DataRow row:set){
-            String name = row.getString("CONSTRAINT_NAME");
+            String name = row.getString("CONS_NAME");
             T foreign = foreigns.get(name.toUpperCase());
             if(null == foreign){
                 foreign = (T)new ForeignKey();
                 foreign.setName(name);
                 foreign.setTable(row.getString("TABLE_NAME"));
-                foreign.setReference(row.getString("REFERENCED_TABLE_NAME"));
+                foreign.setReference(row.getString("REF_TABLE_NAME"));
                 foreigns.put(name.toUpperCase(), foreign);
             }
-            Table refTable = new Table(row.getString("REFERENCED_CATALOG_NAME"),row.getString("REFERENCED_SCHEMA_NAME"),row.getString("REFERENCED_TABLE_NAME"));
-            Column reference = new Column(row.getString("REFERENCED_COLUMN_NAME"));
+            Table refTable = new Table(row.getString("SCHEMA_NAME"),row.getString("SCHEMA_NAME"),row.getString("REF_TABLE_NAME"));
+            Column reference = new Column(colNameProcessing(row.getString("CONL_NAME"),1));
             reference.setTable(refTable);
-            foreign.addColumn(new Column(row.getString("COLUMN_NAME")).setReference(reference).setPosition(row.getInt("ORDINAL_POSITION", 0)));
+            foreign.addColumn(colNameProcessing(row.getString("COL_NAME"),0));
 
         }
         return foreigns;
+    }
+
+    private String colNameProcessing(String colName,int index){
+        // index 为 0、1 0取引用表列名 1取被引用表列名
+        Pattern pattern = Pattern.compile("\\((.*?)\\)");
+        Matcher matcher = pattern.matcher(colName);
+        String[] results = new String[2];
+
+        while (matcher.find() && index < 2) {
+            // 移除括号：matcher.group(1) 直接获取括号内内容
+            results[index++] = matcher.group(1);
+        }
+
+        return results[index];
     }
 
 
@@ -2766,7 +2853,37 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
      */
     @Override
     public List<Run> buildQueryIndexsRun(DataRuntime runtime, Table table, String name){
-        return super.buildQueryIndexsRun(runtime, table, name);
+        List<Run> runs = new ArrayList<>();
+        Run run = new SimpleRun(runtime);
+        runs.add(run);
+        StringBuilder builder = run.getBuilder();
+        builder.append("SELECT\n" +
+                "\tut.table_name,\n" +
+                "\tus.schema_name,\n" +
+                "\t*\n" +
+                "from\n" +
+                "\tuser_INDEXES ui,\n" +
+                "\tuser_tables ut,\n" +
+                "\tuser_schemas us\n" +
+                "where 1=1\n" +
+                "\tAND\n" +
+                "\tut.schema_id = us.schema_id\n" +
+                "\tand\n" +
+                "\tui.table_id = ut.table_id ");
+
+        if(null != table) {
+            if (null != table.getSchema()) {
+                builder.append(" AND us.schema_name = '").append(table.getSchemaName()).append("'\n");
+            }
+            if (null != table.getName()) {
+                builder.append(" AND TABLE_NAME = '").append(objectName(runtime, table.getName())).append("'\n");
+            }
+        }
+        if(BasicUtil.isNotEmpty(name)){
+            builder.append("AND INDEX_NAME='").append(name).append("'\n");
+        }
+
+        return runs;
     }
 
     /**
@@ -2783,7 +2900,45 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
      */
     @Override
     public <T extends Index> LinkedHashMap<String, T> indexs(DataRuntime runtime, int index, boolean create, Table table, LinkedHashMap<String, T> indexs, DataSet set) throws Exception {
-        return super.indexs(runtime, index, create, table, indexs, set);
+        if(null == indexs){
+            indexs = new LinkedHashMap<>();
+        }
+        for(DataRow row:set){
+            String name = row.getString("INDEX_NAME");
+            if(null == name){
+                continue;
+            }
+            String schema = row.getString("SCHEMA_NAME");
+            String tableName = row.getString("TABLE_NAME");
+            T idx = indexs.get(name.toUpperCase());
+            if(null == idx && create){
+                idx = (T)new Index();
+                indexs.put(name.toUpperCase(), idx);
+            }
+            idx.setTable(tableName);
+
+            if(Boolean.parseBoolean(row.getString("IS_PRIMARY"))){
+                idx.setPrimary(true);
+            }
+            if(Boolean.parseBoolean(row.getString("IS_UNIQUE"))){
+                idx.setUnique(true);
+            }
+            idx.setName(name);
+            if(null == table){
+                table = new Table(tableName);
+                table.setSchema(schema);
+            }
+            idx.setTable(table);
+            idx.setType(row.getString("INDEX_TYPE"));
+            String col = row.getString("KEYS");
+            // TODO 对列的处理
+			/*Column column = idx.getColumn(col);
+			if(null == column){
+				idx.addColumn(col, null, row.getInt("SEQ_IN_INDEX", 0));
+			}*/
+            indexs.put(name, idx);
+        }
+        return indexs;
     }
     /**
      * index[结果集封装]<br/>
