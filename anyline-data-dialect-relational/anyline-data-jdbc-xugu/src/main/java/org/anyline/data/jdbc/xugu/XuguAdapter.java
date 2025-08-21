@@ -75,8 +75,8 @@ public class XuguAdapter extends XuguGenusAdapter implements JDBCAdapter, Initia
 
 	public XuguAdapter() {
 		super();
-		delimiterFr = "\"";
-		delimiterTo = "\"";
+		delimiterFr = "`";
+		delimiterTo = "`";
 		for (XuguGenusTypeMetadataAlias alias : XuguGenusTypeMetadataAlias.values()) {
 			this.alias.put(alias.name(), alias.standard());
 			TypeMetadata.Config config = alias.config();
