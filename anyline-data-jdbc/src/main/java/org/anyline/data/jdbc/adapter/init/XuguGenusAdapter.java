@@ -3119,15 +3119,28 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
         Run run = new SimpleRun(runtime);
         runs.add(run);
         StringBuilder builder = run.getBuilder();
-        builder.append("SELECT * FROM USER_TRIGGERS WHERE 1=1");
+        builder.append("select\n" +
+                "\t ut.table_name,\n" +
+                "\tus.schema_name,\n"+
+                "\t*\n" +
+                "from\n" +
+                "\tuser_triggers st ,\n" +
+                "\tuser_objects so ,\n" +
+                "\tuser_schemas us \n" +
+                "where\n" +
+                "\tst.obj_id = so.obj_id\n" +
+                "and \n" +
+                "\tst.db_id = so.db_id\n" +
+                "and \n" +
+                "\tus.schema_id = st.schema_id");
         if(null != table){
-            Schema schemae = table.getSchema();
+            String schemaName = table.getSchemaName();
             String tableName = table.getName();
-            if(BasicUtil.isNotEmpty(schemae)){
-                builder.append(" AND TABLE_OWNER = '").append(schemae).append("'");
+            if(BasicUtil.isNotEmpty(schemaName)){
+                builder.append(" AND us.schema_name = '").append(schemaName).append("'");
             }
             if(BasicUtil.isNotEmpty(tableName)){
-                builder.append(" AND TABLE_NAME = '").append(tableName).append("'");
+                builder.append(" AND so.OBJ_NAME = '").append(tableName).append("'");
             }
         }
         if(null != events && events.size()>0){
@@ -3160,19 +3173,19 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
             triggers = new LinkedHashMap<>();
         }
         for(DataRow row:set){
-            String name = row.getString("TRIGGER_NAME");
+            String name = row.getString("TRIG_NAME");
             T trigger = triggers.get(name.toUpperCase());
             if(null == trigger){
                 trigger = (T)new Trigger();
             }
             trigger.setName(name);
-            Table tab = new Table(row.getString("TABLE_NAME"));
-            tab.setSchema(row.getString("TABLE_OWNER"));
+            Table tab = new Table(row.getString("OBJ_NAME"));
+            tab.setSchema(row.getString("SCHEMA_NAME"));
             trigger.setTable(tab);
             try{
                 boolean each = false;
                 //TRIGGER_NAME AFTER INSERT ON TABLE_NAME FOR EACH ROW
-                String des = row.getStringNvl("DESCRIPTION").toUpperCase();
+                String des = row.getStringNvl("COMMENTS").toUpperCase();
                 if(des.contains("ROW")){
                     each = true;
                 }
@@ -3183,7 +3196,7 @@ public abstract class XuguGenusAdapter extends AbstractJDBCAdapter implements In
             }catch (Exception e){
                 e.printStackTrace();
             }
-            trigger.setDefinition(row.getString("TRIGGER_BODY"));
+            trigger.setDefinition(row.getString("DEFINE"));
 
             triggers.put(name.toUpperCase(), trigger);
 
