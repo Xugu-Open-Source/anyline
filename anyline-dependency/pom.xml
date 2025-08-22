@@ -36,6 +36,7 @@
 		<spring.version>5.3.23</spring.version>
 		<jdbc-mssql.version>7.2.2.jre8</jdbc-mssql.version>
 		<jdbc-mysql.version>8.0.28</jdbc-mysql.version>
+		<jdbc-xugu.version>12.3.4</jdbc-xugu.version>
 		<jdbc-db2.version>11.5.0.0</jdbc-db2.version>
 		<jdbc-ojdbc.version>21.3.0.0</jdbc-ojdbc.version><!-- oracle -->
 		<jdbc-postgresql.version>42.4.1</jdbc-postgresql.version>
@@ -373,6 +374,11 @@
 			</dependency>
 			<dependency>
 				<groupId>org.anyline</groupId>
+				<artifactId>anyline-data-jdbc-oracle</artifactId>
+				<version>${anyline.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.anyline</groupId>
 				<artifactId>anyline-data-jdbc-oscar</artifactId>
 				<version>${anyline.version}</version>
 			</dependency>
@@ -665,6 +671,11 @@
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
 				<version>${jdbc-mysql.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.xugudb</groupId>
+				<artifactId>xugu-jdbc</artifactId>
+				<version>${jdbc-xugu.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.ibm.informix</groupId>

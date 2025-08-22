@@ -79,6 +79,7 @@
 		<module>anyline-data-jdbc-dialect-extends/anyline-data-jdbc-oceanbase</module>
 		<module>anyline-data-jdbc-dialect/anyline-data-jdbc-opengauss</module>					<!--高斯-->
 		<module>anyline-data-jdbc-dialect/anyline-data-jdbc-oracle</module>
+		<module>anyline-data-jdbc-dialect/anyline-data-jdbc-xugu</module>
 		<module>anyline-data-jdbc-dialect/anyline-data-jdbc-oscar</module>						<!--神舟通用-->
 		<module>anyline-data-jdbc-dialect/anyline-data-jdbc-oscar-oracle</module>				<!--神舟通用(oracle)-->
 		<module>anyline-data-jdbc-dialect-extends/anyline-data-jdbc-polardb</module>

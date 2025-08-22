@@ -55,6 +55,7 @@ public enum DatabaseType  implements Serializable {
         MSSQL				("SQL Server"	, KEY_CASE.SRC,"com.microsoft.sqlserver.jdbc.SQLServerDriver"),
         MuDB				("沐融信息科技"	, KEY_CASE.SRC,""),
         MYSQL				("MySQL"		, KEY_CASE.SRC,"com.mysql.cj.jdbc.Driver"),
+        XUGU				("xugu"		, KEY_CASE.SRC,"com.xugu.cloudjdbc.Driver"),
         Neo4j  				("Neo4j"		, KEY_CASE.SRC,"org.neo4j.jdbc.Driver"),
         OceanBase 			("OceanBase"	, KEY_CASE.SRC,"com.oceanbase.jdbc.Driver"),
         OpenGauss           ("高斯"			, KEY_CASE.SRC,"org.opengauss.Driver"),
